@@ -45,6 +45,21 @@ productsRouter.get("/", async (req, res, next) => {
     next(error);
   }
 });
+// const previousOffset = parseInt(offset) - parseInt(limit)
+
+// const nextOffset = parseInt(offset) + parseInt(limit)
+
+// const response = {
+//   data: rows,
+//   paging: {
+//     offset: offset,
+//     limit: limit,
+//     total: count,
+//     next: nextOffset <= count ? ${process.env.BE_URL}/products?limit=${limit}&offset=${nextOffset} : null,
+//     previous: previousOffset >= 0 ? ${process.env.BE_URL}/products?limit=${limit}&offset=${previousOffset} : null,
+//   },
+// }
+// res.send(response)
 
 productsRouter.get("/:id", async (req, res, next) => {
   try {
