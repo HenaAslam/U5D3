@@ -28,13 +28,17 @@ productsRouter.get("/", async (req, res, next) => {
     }
     if (req.query.category)
       query.category = { [Op.iLike]: `%${req.query.category}%` };
-    const products = await productsModel.findAll({
+    if (req.query.search) {
+      query[Op.or] = [
+        { name: { [Op.iLike]: `%${req.query.search}%` } },
+        { description: { [Op.iLike]: `%${req.query.search}%` } },
+      ];
+    }
+    const products = await productsModel.findAndCountAll({
       where: { ...query },
       limit: req.query.limit,
       offset: req.query.offset,
-      //   order: [[`${req.query.sort} ? ${req.query.sort} : name`, "ASC"]],
-      order: [[`name`, "ASC"]],
-      //   order: [[`${req.query.sort}`, "ASC"]],
+      order: [req.query.sort ? [req.query.sort] : ["id", "ASC"]],
     });
     res.send(products);
   } catch (error) {
@@ -42,10 +46,6 @@ productsRouter.get("/", async (req, res, next) => {
   }
 });
 
-// const users = await UsersModel.findAndCountAll({
-//
-
-// })
 productsRouter.get("/:id", async (req, res, next) => {
   try {
     const product = await productsModel.findByPk(req.params.id, {
