@@ -5,17 +5,29 @@ import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import multer from "multer";
 import { Op } from "sequelize";
+import productsCategoriesModel from "./productsCategoriesModel.js";
+import CategoriesModel from "../categories/model.js";
+import reviewsModel from "../reviews/model.js";
+import usersModel from "../users/model.js";
 
 const productsRouter = express.Router();
 
 productsRouter.post("/", async (req, res, next) => {
   try {
     const { id } = await productsModel.create(req.body);
+    if (req.body.categories) {
+      await productsCategoriesModel.bulkCreate(
+        req.body.categories.map((c) => {
+          return { productId: id, categoryId: c };
+        })
+      );
+    }
     res.status(201).send({ id });
   } catch (error) {
     next(error);
   }
 });
+
 productsRouter.get("/", async (req, res, next) => {
   try {
     const query = {};
@@ -34,11 +46,29 @@ productsRouter.get("/", async (req, res, next) => {
         { description: { [Op.iLike]: `%${req.query.search}%` } },
       ];
     }
+
     const products = await productsModel.findAndCountAll({
       where: { ...query },
       limit: req.query.limit,
       offset: req.query.offset,
       order: [req.query.sort ? [req.query.sort] : ["id", "ASC"]],
+      include: [
+        {
+          model: CategoriesModel,
+          attributes: ["categoryName"],
+          through: { attributes: [] },
+        },
+        {
+          model: reviewsModel,
+          attributes: ["userId", "content"],
+          include: [
+            {
+              model: usersModel,
+              attributes: ["name", "surname"],
+            },
+          ],
+        },
+      ],
     });
     res.send(products);
   } catch (error) {
@@ -152,5 +182,18 @@ productsRouter.post(
     }
   }
 );
+
+productsRouter.post("/:productId/categories", async (req, res, next) => {
+  try {
+    const categories = await productsCategoriesModel.bulkCreate(
+      req.body.categories.map((c) => {
+        return { productId: req.params.productId, categoryId: c };
+      })
+    );
+    res.send(categories.map((c) => c.categoryId));
+  } catch (error) {
+    next(error);
+  }
+});
 
 export default productsRouter;
