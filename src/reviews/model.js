@@ -13,10 +13,6 @@ const reviewsModel = sequelize.define("review", {
     type: DataTypes.STRING(50),
     allowNull: false,
   },
-  userId: {
-    type: DataTypes.STRING(50),
-    allowNull: false,
-  },
 });
 
 productsModel.hasMany(reviewsModel, {
@@ -26,21 +22,14 @@ reviewsModel.belongsTo(productsModel, {
   foreignKey: { name: "productId", allowNull: false },
 });
 
-usersModel.hasMany(
-  reviewsModel
-  //   {
-  //   foreignKey: { name: "userId", allowNull: false },
-  //   onDelete: "CASCADE",
-  // }
-);
+usersModel.hasMany(reviewsModel, {
+  foreignKey: { name: "userId", allowNull: false },
+  onDelete: "CASCADE",
+});
 
-reviewsModel.belongsTo(
-  usersModel
-  //   {
-
-  //   foreignKey: { name: "userId", allowNull: false },
-  //   onDelete: "CASCADE",
-  // }
-);
+reviewsModel.belongsTo(usersModel, {
+  foreignKey: { name: "userId", allowNull: false },
+  onDelete: "CASCADE",
+});
 
 export default reviewsModel;
