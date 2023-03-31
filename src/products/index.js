@@ -47,11 +47,16 @@ productsRouter.get("/", async (req, res, next) => {
       ];
     }
 
-    const products = await productsModel.findAndCountAll({
+    const { count, rows } = await productsModel.findAndCountAll({
       where: { ...query },
       limit: req.query.limit,
       offset: req.query.offset,
-      order: [req.query.sort ? [req.query.sort] : ["id", "ASC"]],
+
+      order: [
+        req.query.sort && req.query.direction
+          ? [req.query.sort, req.query.direction]
+          : ["id", "ASC"],
+      ],
       include: [
         {
           model: CategoriesModel,
@@ -60,7 +65,7 @@ productsRouter.get("/", async (req, res, next) => {
         },
         {
           model: reviewsModel,
-          attributes: ["userId", "content"],
+          attributes: ["content", "reviewId"],
           include: [
             {
               model: usersModel,
@@ -70,26 +75,28 @@ productsRouter.get("/", async (req, res, next) => {
         },
       ],
     });
-    res.send(products);
+    const prevOffset = parseInt(req.query.offset) - parseInt(req.query.limit);
+    const nextOffset = parseInt(req.query.offset) + parseInt(req.query.limit);
+    res.send({
+      total: count,
+
+      pages: Math.ceil(count / req.query.limit),
+      links: {
+        prevLink:
+          prevOffset >= 0
+            ? `${process.env.BE_URL}/products?limit=${req.query.limit}&offset=${prevOffset}`
+            : null,
+        nextLink:
+          nextOffset <= count
+            ? `${process.env.BE_URL}/products?limit=${req.query.limit}&offset=${nextOffset}`
+            : null,
+      },
+      products: rows,
+    });
   } catch (error) {
     next(error);
   }
 });
-// const previousOffset = parseInt(offset) - parseInt(limit)
-
-// const nextOffset = parseInt(offset) + parseInt(limit)
-
-// const response = {
-//   data: rows,
-//   paging: {
-//     offset: offset,
-//     limit: limit,
-//     total: count,
-//     next: nextOffset <= count ? ${process.env.BE_URL}/products?limit=${limit}&offset=${nextOffset} : null,
-//     previous: previousOffset >= 0 ? ${process.env.BE_URL}/products?limit=${limit}&offset=${previousOffset} : null,
-//   },
-// }
-// res.send(response)
 
 productsRouter.get("/:id", async (req, res, next) => {
   try {
